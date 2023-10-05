@@ -1,6 +1,5 @@
 import SearchBar from '@/components/SearchBar'
-import { createServerComponentClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
+import { createClient } from '@supabase/supabase-js'
 
 interface HouseholdTypes {
   husband_firstname: string
@@ -22,7 +21,9 @@ interface HomeProps {
 }
 
 export default async function Home({ searchParams }: HomeProps) {
-  const supabase = createServerComponentClient({ cookies })
+  const supabase_url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? ''
+  const supabase_key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? ''
+  const supabase = createClient(supabase_url, supabase_key)
 
   let query = supabase
     .from('asenso_households')

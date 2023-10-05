@@ -45,7 +45,7 @@ const SearchBar = ({ searchKeyword }: { searchKeyword?: string }) => {
   }
 
   return (
-    <form onSubmit={handleSearch} className='flex items-center justify-center relative'>
+    <form onSubmit={handleSearch} className='flex items-center justify-center relative w-4/6'>
       <input
         type='text'
         value={keyword}

@@ -32,7 +32,22 @@ export default async function Home({ searchParams }: HomeProps) {
 
   // Search match
   if (searchParams.keyword && searchParams.keyword.trim() !== '') {
-    query = query.or(`husband_lastname.ilike.%${searchParams.keyword}%,husband_firstname.ilike.%${searchParams.keyword}%`)
+    const keyword = searchParams.keyword.trim()
+
+    // query = query.or(`husband_lastname.ilike.%${keyword}%,husband_middlename.ilike.%${keyword}%,husband_firstname.ilike.%${keyword}%`)
+    // query = query.or(`wife_lastname.ilike.%${searchParams.keyword}%,wife_middlename.ilike.%${searchParams.keyword}%,wife_firstname.ilike.%${searchParams.keyword}%`)
+
+    const searchSplit = keyword.split(' ')
+    const keywordArray: any[] = []
+    searchSplit.forEach(item => {
+      if (item !== '') keywordArray.push(`'${item.trim()}'`)
+    })
+    const searchQuery = keywordArray.join(' & ')
+
+    query = query.textSearch('householdsearch', searchQuery, {
+      type: 'websearch',
+      config: 'english'
+    })
   }
 
   const { data, error } = await query
@@ -43,7 +58,7 @@ export default async function Home({ searchParams }: HomeProps) {
 
   return (
     <div className='items-center relative mx-auto mt-24 mb-12 w-5/6'>
-      <div className='text-center bg-gray-900 mx-auto z-40 w-3/5 fixed top-0 left-0 right-0'>
+      <div className='text-center bg-gray-900 mx-auto z-40 flex justify-center w-full fixed top-0 left-0 right-0'>
           <SearchBar searchKeyword={searchParams.keyword}/>
       </div>
       {

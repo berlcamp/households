@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import { addList } from '@/lib/redux/barangaysSlice'
 import { setUser } from '@/lib/redux/userSlice'
 import { supabase } from '@/lib/supabase/client'
+import type { Session } from '@supabase/supabase-js'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
@@ -13,8 +15,6 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const searchParams = useSearchParams()
   const dispatch = useDispatch()
-
-  console.log('🔐 AuthGuard mounted')
 
   useEffect(() => {
     const fetchBarangays = async (ownerID: number) => {
@@ -33,11 +33,9 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const handleSession = async (session: any) => {
+    const handleSession = async (session: Session) => {
       if (!session?.user) {
-        console.warn('🚧 Would redirect to /login')
-        // router.replace('/login')
+        router.replace('/login')
         return
       }
 
@@ -49,8 +47,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       if (userError || !systemUser) {
         console.error('User fetch error:', userError)
-        console.warn('🚧 Would redirect to /login')
-        // router.replace('/login')
+        router.replace('/login')
         return
       }
 
@@ -73,30 +70,29 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       if (code) {
         const { error: exchangeError } =
           await supabase.auth.exchangeCodeForSession(code)
+
         if (exchangeError) {
           console.error('OAuth exchange error:', exchangeError)
-          console.warn('🚧 Would redirect to /login')
-          // router.replace('/login')
+          router.replace('/login')
           return
         }
 
-        // Clean up ?code from URL
-        window.history.replaceState({}, '', window.location.pathname)
+        // Remove the code from the URL
+        if (typeof window !== 'undefined') {
+          window.history.replaceState({}, '', window.location.pathname)
+        }
 
-        // Fetch session after code exchange
         const {
           data: { session },
           error: sessionError
         } = await supabase.auth.getSession()
 
-        if (sessionError || !session?.user) {
+        if (sessionError || !session) {
           console.error('Session error after exchange:', sessionError)
-          console.warn('🚧 Would redirect to /login')
-          // router.replace('/login')
+          router.replace('/login')
           return
         }
 
-        console.log('Session after code exchange:', session)
         await handleSession(session)
         return
       }
@@ -107,14 +103,12 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         error
       } = await supabase.auth.getSession()
 
-      if (error || !session?.user) {
+      if (error || !session) {
         console.error('Regular session error:', error)
-        console.warn('🚧 Would redirect to /login')
-        // router.replace('/login')
+        router.replace('/login')
         return
       }
 
-      console.log('Regular session:', session)
       await handleSession(session)
     }
 
@@ -122,11 +116,10 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
     const { data: authListener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
-        if (session?.user) {
+        if (session) {
           await handleSession(session)
         } else {
-          console.warn('🚧 Would redirect to /login')
-          // router.replace('/login')
+          router.replace('/login')
         }
       }
     )
@@ -134,7 +127,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe()
     }
-  }, [dispatch, router, searchParams])
+  }, [router, searchParams])
 
   if (loading) return <LoadingSkeleton />
   return <>{children}</>

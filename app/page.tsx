@@ -6,8 +6,13 @@ export default async function Home() {
   //
   const supabase = await getSupabaseClient()
   const {
-    data: { user }
+    data: { user },
+    error
   } = await supabase.auth.getUser()
+
+  if (error) {
+    console.warn('Auth error:', error.message)
+  }
 
   if (user) {
     redirect('/home')

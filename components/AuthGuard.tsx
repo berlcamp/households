@@ -35,7 +35,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         const { error } = await supabase.auth.exchangeCodeForSession(code)
         if (error) {
           console.error('OAuth exchange error:', error)
-          window.location.href = '/login'
+          router.replace('/login')
           return
         }
 
@@ -43,47 +43,76 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         const newUrl = window.location.pathname
         window.history.replaceState({}, '', newUrl)
 
-        // Wait for listener to handle session
+        // ⚠️ Immediately fetch session manually
+        const {
+          data: { session },
+          error: sessionError
+        } = await supabase.auth.getSession()
+
+        if (sessionError || !session?.user) {
+          console.error('Session fetch after exchange error:', sessionError)
+          router.replace('/login')
+          return
+        }
+
+        console.log('Session after code exchange:', session)
+
+        const { data: systemUser } = await supabase
+          .from('users')
+          .select()
+          .eq('user_id', session.user.id)
+          .single()
+
+        if (systemUser) {
+          dispatch(
+            setUser({
+              ...session.user,
+              system_user_id: systemUser.id,
+              owner_id: systemUser.owner_id,
+              name: systemUser.name
+            })
+          )
+          await fetchBarangays(systemUser.owner_id)
+        }
+
+        setLoading(false)
         return
       }
 
-      // No code, check existing session manually
-      let session = null
-
+      // No code: regular session check
       try {
         const { data, error } = await supabase.auth.getSession()
-        session = data.session
-        console.log('Session:', session)
-        if (error) console.error('Session error:', error)
+        const session = data.session
+        console.log('Regular session:', session)
+        if (error || !session?.user) {
+          console.error('Regular session error:', error)
+          router.replace('/login')
+          return
+        }
+
+        const { data: systemUser } = await supabase
+          .from('users')
+          .select()
+          .eq('user_id', session.user.id)
+          .single()
+
+        if (systemUser) {
+          dispatch(
+            setUser({
+              ...session.user,
+              system_user_id: systemUser.id,
+              owner_id: systemUser.owner_id,
+              name: systemUser.name
+            })
+          )
+          await fetchBarangays(systemUser.owner_id)
+        }
+
+        setLoading(false)
       } catch (err) {
         console.error('getSession error:', err)
+        router.replace('/login')
       }
-
-      if (!session?.user) {
-        window.location.href = '/login'
-        return
-      }
-
-      const { data: systemUser } = await supabase
-        .from('users')
-        .select()
-        .eq('user_id', session.user.id)
-        .single()
-
-      if (systemUser) {
-        dispatch(
-          setUser({
-            ...session.user,
-            system_user_id: systemUser.id,
-            owner_id: systemUser.owner_id,
-            name: systemUser.name
-          })
-        )
-        void fetchBarangays(systemUser.owner_id)
-      }
-
-      sessionHandled = true
-      setLoading(false)
     }
 
     initAuth()

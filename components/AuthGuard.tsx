@@ -1,11 +1,9 @@
-/* eslint-disable react-hooks/exhaustive-deps */
 'use client'
 
 import { addList } from '@/lib/redux/barangaysSlice'
 import { setUser } from '@/lib/redux/userSlice'
 import { supabase } from '@/lib/supabase/client'
-import type { Session } from '@supabase/supabase-js'
-import { useRouter, useSearchParams } from 'next/navigation'
+import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import LoadingSkeleton from './LoadingSkeleton'
@@ -13,41 +11,34 @@ import LoadingSkeleton from './LoadingSkeleton'
 export function AuthGuard({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
   const router = useRouter()
-  const searchParams = useSearchParams()
   const dispatch = useDispatch()
 
   useEffect(() => {
-    const fetchBarangays = async (ownerID: number) => {
-      const { data, error } = await supabase
-        .from('barangays')
-        .select()
-        .eq('owner_id', ownerID)
+    const loadSessionAndUser = async () => {
+      const {
+        data: { session },
+        error: sessionError
+      } = await supabase.auth.getSession()
 
-      if (error) {
-        console.error('Fetch barangays error:', error)
-        return
-      }
-
-      if (data) {
-        dispatch(addList(data))
-      }
-    }
-
-    const handleSession = async (session: Session) => {
-      if (!session?.user) {
-        router.replace('/login')
+      if (sessionError || !session?.user) {
+        console.error('No session found:', sessionError)
+        router.replace('/auth/unverified') // Or login
+        setLoading(false)
         return
       }
 
       const { data: systemUser, error: userError } = await supabase
         .from('users')
         .select()
-        .eq('user_id', session.user.id)
+        .eq('email', session.user.email)
+        .eq('is_active', true)
         .single()
 
       if (userError || !systemUser) {
-        console.error('User fetch error:', userError)
-        router.replace('/login')
+        console.error('System user not found or inactive:', userError)
+        await supabase.auth.signOut()
+        router.replace('/auth/unverified')
+        setLoading(false)
         return
       }
 
@@ -60,66 +51,27 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         })
       )
 
-      await fetchBarangays(systemUser.owner_id)
+      const { data: barangays, error: barangayError } = await supabase
+        .from('barangays')
+        .select()
+        .eq('owner_id', systemUser.owner_id)
+
+      if (barangayError) {
+        console.error('Failed to load barangays:', barangayError)
+      } else {
+        dispatch(addList(barangays))
+      }
+
       setLoading(false)
     }
 
-    const initAuth = async () => {
-      const code = searchParams.get('code')
+    loadSessionAndUser()
 
-      if (code) {
-        const { error: exchangeError } =
-          await supabase.auth.exchangeCodeForSession(code)
-
-        if (exchangeError) {
-          console.error('OAuth exchange error:', exchangeError)
-          router.replace('/login')
-          return
-        }
-
-        // Remove the code from the URL
-        if (typeof window !== 'undefined') {
-          window.history.replaceState({}, '', window.location.pathname)
-        }
-
-        const {
-          data: { session },
-          error: sessionError
-        } = await supabase.auth.getSession()
-
-        if (sessionError || !session) {
-          console.error('Session error after exchange:', sessionError)
-          router.replace('/login')
-          return
-        }
-
-        await handleSession(session)
-        return
-      }
-
-      // Regular session check
-      const {
-        data: { session },
-        error
-      } = await supabase.auth.getSession()
-
-      if (error || !session) {
-        console.error('Regular session error:', error)
-        router.replace('/login')
-        return
-      }
-
-      await handleSession(session)
-    }
-
-    initAuth()
-
+    // Optional: handle logout cases live
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        if (session) {
-          await handleSession(session)
-        } else {
-          router.replace('/login')
+      (_event, session) => {
+        if (!session) {
+          router.replace('/auth/unverified')
         }
       }
     )
@@ -127,7 +79,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     return () => {
       authListener?.subscription.unsubscribe()
     }
-  }, [router, searchParams])
+  }, [dispatch, router])
 
   if (loading) return <LoadingSkeleton />
   return <>{children}</>

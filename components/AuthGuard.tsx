@@ -48,9 +48,16 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
       }
 
       // No code, check existing session manually
-      const {
-        data: { session }
-      } = await supabase.auth.getSession()
+      let session = null
+
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        session = data.session
+        console.log('Session:', session)
+        if (error) console.error('Session error:', error)
+      } catch (err) {
+        console.error('getSession error:', err)
+      }
 
       if (!session?.user) {
         window.location.href = '/login'

@@ -14,6 +14,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
   const searchParams = useSearchParams()
   const dispatch = useDispatch()
 
+  console.log('🔐 AuthGuard mounted')
+
   useEffect(() => {
     const fetchBarangays = async (ownerID: number) => {
       const { data, error } = await supabase
@@ -34,7 +36,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const handleSession = async (session: any) => {
       if (!session?.user) {
-        router.replace('/login')
+        console.warn('🚧 Would redirect to /login')
+        // router.replace('/login')
         return
       }
 
@@ -46,7 +49,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       if (userError || !systemUser) {
         console.error('User fetch error:', userError)
-        router.replace('/login')
+        console.warn('🚧 Would redirect to /login')
+        // router.replace('/login')
         return
       }
 
@@ -71,7 +75,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
           await supabase.auth.exchangeCodeForSession(code)
         if (exchangeError) {
           console.error('OAuth exchange error:', exchangeError)
-          router.replace('/login')
+          console.warn('🚧 Would redirect to /login')
+          // router.replace('/login')
           return
         }
 
@@ -86,7 +91,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
         if (sessionError || !session?.user) {
           console.error('Session error after exchange:', sessionError)
-          router.replace('/login')
+          console.warn('🚧 Would redirect to /login')
+          // router.replace('/login')
           return
         }
 
@@ -103,7 +109,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
 
       if (error || !session?.user) {
         console.error('Regular session error:', error)
-        router.replace('/login')
+        console.warn('🚧 Would redirect to /login')
+        // router.replace('/login')
         return
       }
 
@@ -118,7 +125,8 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         if (session?.user) {
           await handleSession(session)
         } else {
-          router.replace('/login')
+          console.warn('🚧 Would redirect to /login')
+          // router.replace('/login')
         }
       }
     )

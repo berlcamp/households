@@ -2,6 +2,7 @@
 
 import { AppSidebar } from '@/components/AppSidebar'
 import { AuthGuard } from '@/components/AuthGuard'
+import LoadingSkeleton from '@/components/LoadingSkeleton'
 import { OfflineDetector } from '@/components/OfflineDetector'
 import StickyHeader from '@/components/StickyHeader'
 import { SidebarProvider } from '@/components/ui/sidebar'
@@ -19,7 +20,7 @@ export default function AuthLayout({
       <Toaster />
       <OfflineDetector />
       <Providers>
-        <Suspense fallback={<div>Loading...</div>}>
+        <Suspense fallback={<LoadingSkeleton />}>
           <AuthGuard>
             <SidebarProvider>
               <AppSidebar />

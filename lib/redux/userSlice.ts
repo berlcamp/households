@@ -4,6 +4,7 @@ import { User } from '@supabase/supabase-js'
 
 interface ExtendedUser extends User {
   system_user_id?: number
+  owner_id?: number
   type?: string
   name?: string
 }

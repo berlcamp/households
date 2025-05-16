@@ -29,18 +29,26 @@ export default function Page() {
   const barangay = useAppSelector((state) => state.barangay.selectedBarangay)
 
   useEffect(() => {
+    if (!barangayId || !user?.owner_id) return
+
     dispatch(clearBarangay()) // 👈 Clear old barangay when URL changes
 
     const fetchData = async () => {
       console.log('barangay details fetched')
       setLoading(true)
       // get barangay
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('barangays')
         .select()
         .eq('id', barangayId)
-        .eq('owner_id', user?.system_user_id)
+        .eq('owner_id', user?.owner_id)
         .maybeSingle()
+
+      if (error) {
+        console.error('Failed to fetch barangay:', error)
+      } else if (data) {
+        dispatch(setBarangay(data))
+      }
 
       if (data) {
         dispatch(setBarangay(data))
@@ -50,13 +58,13 @@ export default function Page() {
       setLoading(false)
     }
     void fetchData()
-  }, [barangayId])
+  }, [barangayId, user?.owner_id])
 
   if (loading) {
     return <LoadingSkeleton />
   }
 
-  if (!barangay) {
+  if (!barangay && !loading) {
     return (
       <div className="space-y-4 w-full">
         <div className="app__title">
@@ -69,7 +77,7 @@ export default function Page() {
   return (
     <div className="w-full">
       <div className="app__title">
-        <h1 className="text-xl font-semibold">{barangay.name}</h1>
+        <h1 className="text-xl font-semibold">{barangay?.name}</h1>
       </div>
 
       {/* Tab Navigation */}

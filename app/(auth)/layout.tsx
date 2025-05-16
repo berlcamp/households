@@ -6,6 +6,7 @@ import { OfflineDetector } from '@/components/OfflineDetector'
 import StickyHeader from '@/components/StickyHeader'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { Providers } from '@/lib/redux/providers'
+import { Suspense } from 'react'
 import { Toaster } from 'react-hot-toast'
 
 export default function AuthLayout({
@@ -18,15 +19,17 @@ export default function AuthLayout({
       <Toaster />
       <OfflineDetector />
       <Providers>
-        <AuthGuard>
-          <SidebarProvider>
-            <AppSidebar />
-            <StickyHeader />
-            <main className="w-full">
-              <div className="mt-16">{children}</div>
-            </main>
-          </SidebarProvider>
-        </AuthGuard>
+        <Suspense fallback={<div>Loading...</div>}>
+          <AuthGuard>
+            <SidebarProvider>
+              <AppSidebar />
+              <StickyHeader />
+              <main className="w-full">
+                <div className="mt-16">{children}</div>
+              </main>
+            </SidebarProvider>
+          </AuthGuard>
+        </Suspense>
       </Providers>
     </>
   )

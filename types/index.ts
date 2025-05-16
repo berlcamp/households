@@ -15,6 +15,7 @@ export interface Settings {
 export interface User {
   id: string
   user_id: string
+  owner_id: string
   name: string
   password: string
   email?: string

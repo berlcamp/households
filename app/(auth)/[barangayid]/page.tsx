@@ -64,7 +64,7 @@ export default function Page() {
     return <LoadingSkeleton />
   }
 
-  if (!barangay && !loading) {
+  if (!barangay) {
     return (
       <div className="space-y-4 w-full">
         <div className="app__title">
@@ -77,7 +77,7 @@ export default function Page() {
   return (
     <div className="w-full">
       <div className="app__title">
-        <h1 className="text-xl font-semibold">{barangay?.name}</h1>
+        <h1 className="text-xl font-semibold">{barangay.name}</h1>
       </div>
 
       {/* Tab Navigation */}
@@ -117,7 +117,9 @@ export default function Page() {
       <div className="px-4">
         {/* Tab Content */}
         {activeTab === 'overview' && <OverviewTab />}
-        {activeTab === 'households' && <HouseholdsTab />}
+        {activeTab === 'households' && (
+          <HouseholdsTab barangayId={barangay.id} />
+        )}
         {activeTab === 'residents' && <ResidentsTab />}
       </div>
     </div>

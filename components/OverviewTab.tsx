@@ -1,6 +1,7 @@
 'use client'
 
 import { setBarangay } from '@/lib/redux/barangaySlice'
+import { updateList } from '@/lib/redux/barangaysSlice'
 import { useAppDispatch, useAppSelector } from '@/lib/redux/hook'
 import { supabase } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
@@ -36,20 +37,22 @@ export const OverviewTab = () => {
   const dispatch = useAppDispatch()
 
   const handleSave = async () => {
+    if (!barangay) return
+
     if (!name.trim()) {
       toast.error('Barangay name is required.')
       return
     }
 
     setLoading(true)
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('barangays')
       .update({
         name: name.trim(),
         description: description.trim(),
         color: selectedColor
       })
-      .eq('id', barangay?.id)
+      .eq('id', barangay.id)
       .select()
 
     setLoading(false)
@@ -57,7 +60,24 @@ export const OverviewTab = () => {
     if (error) {
       toast.error(error.message)
     } else {
-      dispatch(setBarangay(data[0]))
+      dispatch(
+        updateList({
+          name: name.trim(),
+          description: description.trim(),
+          color: selectedColor,
+          owner_id: barangay.owner_id,
+          id: barangay.id
+        })
+      ) // ✅ Update Redux with new data
+      dispatch(
+        setBarangay({
+          ...barangay,
+          name: name.trim(),
+          description: description.trim(),
+          color: selectedColor,
+          id: barangay.id
+        })
+      ) // ✅ Update Redux with new data
       toast.success('Successfully saved')
     }
   }

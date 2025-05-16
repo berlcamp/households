@@ -55,6 +55,7 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
         .from('barangays')
         .select()
         .eq('owner_id', systemUser.owner_id)
+        .order('id', { ascending: true })
 
       if (barangayError) {
         console.error('Failed to load barangays:', barangayError)

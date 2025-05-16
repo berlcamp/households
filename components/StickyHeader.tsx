@@ -1,13 +1,7 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 'use client'
 
 import { Button } from '@/components/ui/button'
-import { useAppDispatch, useAppSelector } from '@/lib/redux/hook'
 
-import { addList } from '@/lib/redux/listSlice'
-import { addList as addList2 } from '@/lib/redux/stocksSlice'
-import { supabase } from '@/lib/supabase/client'
-import { Household, Resident } from '@/types'
 import { PlusIcon } from 'lucide-react'
 import Link from 'next/link'
 import { useState } from 'react'
@@ -18,115 +12,11 @@ import { SidebarTrigger } from './ui/sidebar'
 export default function StickyHeader() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const dispatch = useAppDispatch()
-  const barangay = useAppSelector((state) => state.barangay.selectedBarangay)
-
   const [searchTerm, setSearchTerm] = useState('')
 
-  const fetchData = async (searchTerm: string) => {
-    // If there's a search term, use the SQL function to filter
-    if (searchTerm.trim() !== '') {
-      const { data: searchResults, error } = await supabase.rpc(
-        'households_search_member',
-        {
-          query: searchTerm,
-          p_barangay: barangay
-        }
-      )
-
-      if (error) {
-        console.error('Search error:', error.message)
-        return
-      }
-
-      // If search has no results, do not display anything
-      if (!searchResults || searchResults.length === 0) {
-        dispatch(addList([]))
-        dispatch(addList2([]))
-        return
-      }
-
-      const ids = searchResults.map((r: any) => r.resident_id)
-
-      // Filtered residents
-      const { data: residentsData = [] } = await supabase
-        .from('residents')
-        .select()
-        .in('id', ids)
-
-      // Filtered household members
-      const { data: householdMembersData = [] } = await supabase
-        .from('household_members')
-        .select('resident_id')
-        .in('resident_id', ids)
-
-      const residentsWithHousehold = residentsData?.map(
-        (resident: Resident) => ({
-          ...resident,
-          hasHousehold: householdMembersData?.some(
-            (m) => m.resident_id === resident.id
-          )
-        })
-      )
-
-      // Fetch households only related to found members
-      const { data: householdsData } = await supabase
-        .from('households')
-        .select('*, members:household_members(*, resident:resident_id(*))')
-        .eq('barangay', barangay)
-
-      const transformedHouseholds =
-        (householdsData as Household[] | null)?.map((h) => ({
-          id: h.id,
-          members: h.members.map((m) => ({
-            id: m.resident_id,
-            resident_id: m.resident_id,
-            fullname: m.fullname,
-            type: m.type
-          }))
-        })) || []
-
-      dispatch(addList(transformedHouseholds))
-      dispatch(addList2(residentsWithHousehold ?? []))
-      return
-    }
-
-    // If no search, get all residents
-    const { data: residentsData = [] } = await supabase
-      .from('residents')
-      .select()
-      .eq('barangay', barangay)
-
-    const { data: householdMembersData = [] } = await supabase
-      .from('household_members')
-      .select('resident_id')
-      .eq('barangay', barangay)
-
-    const residentsWithHousehold = residentsData?.map((resident: Resident) => ({
-      ...resident,
-      hasHousehold: householdMembersData?.some(
-        (m) => m.resident_id === resident.id
-      )
-    }))
-
-    const { data: householdsData } = await supabase
-      .from('households')
-      .select('*, members:household_members(*, resident:resident_id(*))')
-      .eq('barangay', barangay)
-
-    const transformedHouseholds =
-      (householdsData as Household[] | null)?.map((h) => ({
-        id: h.id,
-        members: h.members.map((m) => ({
-          id: m.resident_id,
-          resident_id: m.resident_id,
-          fullname: m.fullname,
-          type: m.type
-        }))
-      })) || []
-
-    dispatch(addList(transformedHouseholds))
-    dispatch(addList2(residentsWithHousehold ?? []))
+  const handleSearch = async (searchTerm: string) => {
+    // handle search code here
+    console.log(searchTerm)
   }
 
   return (
@@ -154,7 +44,7 @@ export default function StickyHeader() {
           if (e.key === 'Enter' && !isSubmitting) {
             e.preventDefault()
             setIsSubmitting(true)
-            fetchData(searchTerm) // optionally call fetch manually
+            handleSearch(searchTerm) // optionally call fetch manually
             e.currentTarget.blur() // 👈 Remove focus
             setTimeout(() => setIsSubmitting(false), 1000) // 1 second cooldown
           }

@@ -34,28 +34,30 @@ export interface AddUserFormValues {
 export interface Resident {
   id: number
   fullname: string
-  barangay: string
-  hasHousehold?: boolean
+  barangay_id: number
+  barangay?: Barangay
 }
 
 export interface Barangay {
   id: number
   name: string
   description: string
+  owner_id: string
   color: string
 }
 
 export interface HouseholdMember {
   id: number
   resident_id: number
-  resident?: Resident
-  barangay?: string
-  fullname: string
+  barangay_id: number
+  resident: Resident
+  barangay?: Barangay
   type: 'leader' | 'member'
 }
 
 export interface Household {
   id: number
-  barangay: string
+  barangay_id: number
+  barangay: Barangay
   members: HouseholdMember[]
 }
